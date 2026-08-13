@@ -1,68 +1,30 @@
-import { useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
-
-import SearchBar from "../SearchBar/SearchBar";
-import MovieGrid from "../NoteForm/NoteForm";
-import Loader from "../Loader/Loader";
-import ErrorMessage from "../ErrorMessage/ErrorMessage";
-import MovieModal from "../Modal/Modal";
-
-import { fetchMovies } from "../../services/noteService";
-import type { Movie } from "../../types/note";
+import { useQuery } from "@tanstack/react-query";
+import { fetchNotes } from "../../services/noteService";
+import NoteList from "../NoteList/NoteList";
+import css from "./App.module.css";
 
 export default function App() {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-
-  const handleSearch = async (query: string) => {
-    try {
-      setMovies([]);
-      setIsError(false);
-      setIsLoading(true);
-
-      const newMovies = await fetchMovies(query);
-
-      if (newMovies.length === 0) {
-        toast.error("No movies found for your request.");
-        return;
-      }
-
-      setMovies(newMovies);
-    } catch (error) {
-      console.error(error);
-      setIsError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSelect = (movie: Movie) => {
-    setSelectedMovie(movie);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedMovie(null);
-  };
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["notes"],
+    queryFn: () =>
+      fetchNotes({
+        page: 1,
+      }),
+  });
 
   return (
-    <>
-      <SearchBar onSubmit={handleSearch} />
+    <div className={css.app}>
+      <header className={css.toolbar}>
+        {/* SearchBox */}
+        {/* Pagination */}
+        {/* Кнопка створення нотатки */}
+      </header>
 
-      {isLoading && <Loader />}
+      {isLoading && <p>Loading notes...</p>}
 
-      {isError && <ErrorMessage />}
+      {isError && <p>Something went wrong.</p>}
 
-      {!isLoading && !isError && movies.length > 0 && (
-        <MovieGrid movies={movies} onSelect={handleSelect} />
-      )}
-
-      {selectedMovie && (
-        <MovieModal movie={selectedMovie} onClose={handleCloseModal} />
-      )}
-
-      <Toaster />
-    </>
+      {data && data.notes.length > 0 && <NoteList notes={data.notes} />}
+    </div>
   );
 }
