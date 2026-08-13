@@ -1,14 +1,18 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchNotes } from "../../services/noteService";
 import NoteList from "../NoteList/NoteList";
+import Pagination from "../Pagination/Pagination";
 import css from "./App.module.css";
 
 export default function App() {
+  const [page, setPage] = useState(1);
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["notes"],
+    queryKey: ["notes", page],
     queryFn: () =>
       fetchNotes({
-        page: 1,
+        page,
       }),
   });
 
@@ -16,8 +20,16 @@ export default function App() {
     <div className={css.app}>
       <header className={css.toolbar}>
         {/* SearchBox */}
-        {/* Pagination */}
-        {/* Кнопка створення нотатки */}
+
+        {data && data.totalPages > 1 && (
+          <Pagination
+            totalPages={data.totalPages}
+            currentPage={page}
+            onPageChange={setPage}
+          />
+        )}
+
+        <button className={css.button}>Create note +</button>
       </header>
 
       {isLoading && <p>Loading notes...</p>}
