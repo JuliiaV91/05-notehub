@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchNotes } from "../../services/noteService";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createNote, fetchNotes } from "../../services/noteService";
 import NoteList from "../NoteList/NoteList";
 import Pagination from "../Pagination/Pagination";
 import Modal from "../Modal/Modal";
+import NoteForm from "../NoteForm/NoteForm";
 import css from "./App.module.css";
 
 export default function App() {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["notes", page],
@@ -16,6 +18,14 @@ export default function App() {
       fetchNotes({
         page,
       }),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createNote,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      setIsModalOpen(false);
+    },
   });
 
   return (
@@ -37,7 +47,10 @@ export default function App() {
       </header>
       {isModalOpen && (
         <Modal onClose={() => setIsModalOpen(false)}>
-          <p>Тут буде форма</p>
+          <NoteForm
+            onCancel={() => setIsModalOpen(false)}
+            onSubmit={(values) => createMutation.mutate(values)}
+          />
         </Modal>
       )}
 
