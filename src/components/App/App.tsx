@@ -7,6 +7,8 @@ import Pagination from "../Pagination/Pagination";
 import Modal from "../Modal/Modal";
 import NoteForm from "../NoteForm/NoteForm";
 import SearchBox from "../SearchBox/SearchBox";
+import Loader from "../Loader/Loader";
+import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import css from "./App.module.css";
 
 export default function App() {
@@ -78,9 +80,9 @@ export default function App() {
         </Modal>
       )}
 
-      {isLoading && <p>Loading notes...</p>}
+      {isLoading && <Loader />}
 
-      {isError && <p>Something went wrong.</p>}
+      {isError && <ErrorMessage />}
 
       {data && data.notes.length > 0 && (
         <NoteList
