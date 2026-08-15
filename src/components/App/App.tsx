@@ -1,22 +1,27 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createNote, fetchNotes } from "../../services/noteService";
+import { createNote, deleteNote, fetchNotes } from "../../services/noteService";
+import { useDebouncedCallback } from "use-debounce";
 import NoteList from "../NoteList/NoteList";
 import Pagination from "../Pagination/Pagination";
 import Modal from "../Modal/Modal";
 import NoteForm from "../NoteForm/NoteForm";
+import SearchBox from "../SearchBox/SearchBox";
 import css from "./App.module.css";
 
 export default function App() {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["notes", page],
+    queryKey: ["notes", page, search],
     queryFn: () =>
       fetchNotes({
         page,
+        search,
       }),
   });
 
@@ -28,10 +33,29 @@ export default function App() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteNote,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["notes"],
+      });
+    },
+  });
+
+  const debouncedSearch = useDebouncedCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, 500);
+
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    debouncedSearch(value);
+  };
+
   return (
     <div className={css.app}>
       <header className={css.toolbar}>
-        {/* SearchBox */}
+        <SearchBox value={searchInput} onChange={handleSearchChange} />
 
         {data && data.totalPages > 1 && (
           <Pagination
@@ -58,7 +82,12 @@ export default function App() {
 
       {isError && <p>Something went wrong.</p>}
 
-      {data && data.notes.length > 0 && <NoteList notes={data.notes} />}
+      {data && data.notes.length > 0 && (
+        <NoteList
+          notes={data.notes}
+          onDelete={(noteId) => deleteMutation.mutate(noteId)}
+        />
+      )}
     </div>
   );
 }
